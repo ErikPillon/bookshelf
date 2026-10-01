@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync": "tsx --env-file-if-exists=.env.local scripts/sync.ts"
+    "sync": "tsx --env-file-if-exists=.env.local scripts/sync.ts",
+    "test": "node --import tsx --test lib/*.test.ts"
   },
   "dependencies": {
     "next": "16.3.8",
