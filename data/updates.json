@@ -1,0 +1,102 @@
+[
+  {
+    "guid": "ReadStatus11277656212",
+    "type": "started",
+    "at": "2026-08-17T20:15:55.000Z",
+    "bookId": "34941133",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik started reading 'Principles: Life and Work'"
+  },
+  {
+    "guid": "ReadStatus11280089679",
+    "type": "started",
+    "at": "2026-08-18T10:59:11.000Z",
+    "bookId": "41881472",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik started reading 'The Psychology of Money: Timeless Lessons on Wealth, Greed, and Happiness'"
+  },
+  {
+    "guid": "Review3765231962",
+    "type": "review",
+    "at": "2026-08-25T18:02:29.000Z",
+    "bookId": "41881472",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik added 'The Psychology of Money: Timeless Lessons on Wealth, Greed, and Happiness'"
+  },
+  {
+    "guid": "Review8405128964",
+    "type": "review",
+    "at": "2026-09-03T18:03:39.000Z",
+    "bookId": "128429",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik added 'Against the Gods: The Remarkable Story of Risk'"
+  },
+  {
+    "guid": "Review5332532763",
+    "type": "review",
+    "at": "2026-09-26T10:44:33.000Z",
+    "bookId": "54493401",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik added 'Project Hail Mary'"
+  },
+  {
+    "guid": "ReadStatus11429711862",
+    "type": "started",
+    "at": "2026-09-26T10:45:25.000Z",
+    "bookId": "60321447",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik started reading 'Chip War: The Fight for the World's Most Critical Technology'"
+  },
+  {
+    "guid": "UserStatus1340312070",
+    "type": "progress",
+    "at": "2026-09-26T10:45:40.000Z",
+    "bookId": "60321447",
+    "bookTitle": "Chip War",
+    "page": 163,
+    "of": 431,
+    "raw": "Erik is on page 163 of 431 of Chip War"
+  },
+  {
+    "guid": "Review6398367136",
+    "type": "review",
+    "at": "2026-09-30T07:28:20.000Z",
+    "bookId": "60321447",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik added 'Chip War: The Fight for the World's Most Critical Technology'"
+  },
+  {
+    "guid": "ReadStatus11446995879",
+    "type": "started",
+    "at": "2026-09-30T22:03:01.000Z",
+    "bookId": "23986891",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik started reading 'Mastering 'Metrics: The Path from Cause to Effect'"
+  },
+  {
+    "guid": "UserStatus1342667842",
+    "type": "progress",
+    "at": "2026-09-30T22:03:07.000Z",
+    "bookId": "23986891",
+    "bookTitle": "Mastering 'Metrics",
+    "page": 46,
+    "of": 293,
+    "raw": "Erik is on page 46 of 293 of Mastering 'Metrics"
+  }
+]

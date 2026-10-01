@@ -1,0 +1,25 @@
+{
+  "syncedAt": "2026-10-01T22:14:00.824Z",
+  "profileUrl": "https://www.goodreads.com/user/show/91605767-erik-pillon",
+  "counts": {
+    "read": 229,
+    "currently-reading": 17,
+    "to-read": 422,
+    "did-not-finish": 3,
+    "total": 671
+  },
+  "challenge": {
+    "year": 2026,
+    "goal": 52,
+    "completed": 20
+  },
+  "sources": {
+    "rss": true,
+    "csvSeed": true,
+    "profileHtml": true,
+    "updates": true
+  },
+  "warnings": [
+    "10 read books have no read date — excluded from per-year charts"
+  ]
+}
