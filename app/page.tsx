@@ -1,69 +1,326 @@
-import Image from "next/image";
+import { BookTable } from '@/components/BookTable';
+import { RefreshButton } from '@/components/RefreshButton';
+import { ChallengeHero } from '@/components/ChallengeHero';
+import { Chart, RankedBars, type BarDatum } from '@/components/Chart';
+import { ReadingNow } from '@/components/ReadingNow';
+import { Tabs } from '@/components/Tabs';
+import { DataTable, nf, Panel, plural, StatTile } from '@/components/ui';
+import { CHALLENGE_GOALS, GOODREADS_PROFILE_URL, SITE } from '@/lib/config';
+import { loadLibrary, loadMeta } from '@/lib/data';
+import {
+  booksPerMonth,
+  booksPerYear,
+  challengeStats,
+  currentMonthStreak,
+  currentlyReading,
+  extremes,
+  formatYear,
+  publicationBuckets,
+  ratingStats,
+  topAuthors,
+  topTags,
+  totals,
+} from '@/lib/stats';
+
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+  const { books } = loadLibrary();
+  const meta = loadMeta();
+
+  // "Now" is build time. The site rebuilds daily and the footer states when, so
+  // day-counting figures are never more than a build old.
+  const now = new Date();
+  const year = now.getUTCFullYear();
+
+  if (books.length === 0) {
+    return (
+      <Shell meta={meta}>
+        <Panel title="No reading history yet">
+          <p className="m-0 text-sm text-ink-secondary">
+            Nothing has been synced from Goodreads yet. Once the first sync runs, this
+            page fills in with challenge progress, reading history and every book on
+            the shelves.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+        </Panel>
+      </Shell>
+    );
+  }
+
+  const challenge = challengeStats(books, CHALLENGE_GOALS[year] ?? null, now);
+  const months = booksPerMonth(books, year);
+  const years = booksPerYear(books);
+  const ratings = ratingStats(books);
+  const t = totals(books);
+  const e = extremes(books);
+  const active = currentlyReading(books, now);
+  const streak = currentMonthStreak(books, now);
+  const pagesThisYear = months.reduce((sum, m) => sum + m.pages, 0);
+
+  const monthData: BarDatum[] = months.map((m, i) => ({
+    label: MONTHS[i]!,
+    shortLabel: MONTHS[i]![0],
+    value: m.books,
+    detail: m.pages > 0 ? `${nf.format(m.pages)} pages` : undefined,
+  }));
+
+  const yearData: BarDatum[] = years.map((y) => ({
+    label: String(y.year),
+    shortLabel: `’${String(y.year).slice(2)}`,
+    value: y.books,
+    detail: `${nf.format(y.pages)} pages`,
+  }));
+
+  const ratingData: BarDatum[] = ratings.histogram.map((h) => ({
+    label: `${h.rating}★`,
+    value: h.count,
+  }));
+
+  const spread = publicationBuckets(books);
+
+  const taggedRead = books.filter(
+    (b) => b.shelf === 'read' && !b.removedAt && b.tags.length > 0,
+  ).length;
+
+  return (
+    <Shell meta={meta}>
+      <Tabs
+        panels={[
+          {
+            id: 'year',
+            label: 'This year',
+            content: (
+              <>
+                <ChallengeHero
+                  challenge={challenge}
+                  pagesThisYear={pagesThisYear}
+                  streakMonths={streak}
+                />
+                <Panel title={`Books finished each month in ${year}`}>
+                  <Chart
+                    data={monthData}
+                    unit="books"
+                    range={`month in ${year}`}
+                    emptyMessage={`Nothing finished in ${year} yet.`}
+                  />
+                  <DataTable
+                    caption={`Books and pages finished per month in ${year}`}
+                    columns={['Month', 'Books', 'Pages']}
+                    rows={months.map((m, i) => [MONTHS[i]!, m.books, m.pages])}
+                  />
+                </Panel>
+              </>
+            ),
+          },
+          {
+            id: 'now',
+            label: `Reading now (${t.shelves['currently-reading']})`,
+            content: (
+              <Panel
+                title="On the go"
+                note="Page progress comes from Goodreads status updates, so it only appears for books you have posted an update on."
+              >
+                <ReadingNow active={active} />
+              </Panel>
+            ),
+          },
+          {
+            id: 'history',
+            label: 'History',
+            content: (
+              <>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <StatTile label="Books read" value={nf.format(t.read)} />
+                  <StatTile
+                    label="Pages read"
+                    value={nf.format(t.pages)}
+                    hint={
+                      t.booksMissingPages > 0
+                        ? `${plural(t.booksMissingPages, 'book has', 'books have')} no page count`
+                        : undefined
+                    }
+                  />
+                  <StatTile
+                    label="Average length"
+                    value={t.averagePages ? `${Math.round(t.averagePages)} pp` : '—'}
+                  />
+                  <StatTile label="Read more than once" value={plural(t.rereads, 'book')} />
+                </div>
+
+                <Panel title="Books finished each year">
+                  <Chart data={yearData} unit="books" range="year" />
+                  <DataTable
+                    caption="Books and pages finished per year"
+                    columns={['Year', 'Books', 'Pages']}
+                    rows={years.map((y) => [String(y.year), y.books, y.pages])}
+                  />
+                </Panel>
+
+                <Panel title="Notable">
+                  <dl className="m-0 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                    <Notable label="Longest" book={e.longest?.title} detail={e.longest?.pages ? `${nf.format(e.longest.pages)} pages` : undefined} />
+                    <Notable label="Shortest" book={e.shortest?.title} detail={e.shortest?.pages ? `${nf.format(e.shortest.pages)} pages` : undefined} />
+                    <Notable label="Oldest" book={e.oldest?.title} detail={formatYear(e.oldest?.publishedYear ?? null)} />
+                    <Notable label="Newest" book={e.newest?.title} detail={formatYear(e.newest?.publishedYear ?? null)} />
+                  </dl>
+                </Panel>
+              </>
+            ),
+          },
+          {
+            id: 'taste',
+            label: 'Taste',
+            content: (
+              <>
+                <Panel
+                  title="How you rate"
+                  note={
+                    ratings.delta !== null
+                      ? `Across the ${nf.format(ratings.rated)} books you rated, your average is ${ratings.myAverage?.toFixed(2)} against a Goodreads average of ${ratings.communityAverage?.toFixed(2)} for the same books — ${Math.abs(ratings.delta).toFixed(2)} ${ratings.delta >= 0 ? 'more generous' : 'harsher'}.`
+                      : undefined
+                  }
+                >
+                  <Chart data={ratingData} unit="books" range="rating" />
+                  <DataTable
+                    caption="Number of books at each rating"
+                    columns={['Rating', 'Books']}
+                    rows={ratings.histogram.map((h) => [`${h.rating} stars`, h.count])}
+                  />
+                </Panel>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Panel title="Most read authors">
+                    <RankedBars
+                      data={topAuthors(books, 8).map((a) => ({
+                        label: a.label,
+                        value: a.count,
+                        detail: `${plural(a.count, 'book')}${a.averageRating ? ` · ${a.averageRating.toFixed(1)}★` : ''}`,
+                      }))}
+                      unit="books"
+                    />
+                  </Panel>
+
+                  <Panel
+                    title="Shelves"
+                    note={`Only ${taggedRead} of ${nf.format(t.read)} read books are tagged, so this is a partial picture.`}
+                  >
+                    <RankedBars
+                      data={topTags(books, 8).map((tag) => ({
+                        label: tag.label,
+                        value: tag.count,
+                        detail: plural(tag.count, 'book'),
+                      }))}
+                      unit="books"
+                    />
+                  </Panel>
+                </div>
+
+                <Panel
+                  title="When the books were written"
+                  note={
+                    spread.excluded > 0
+                      ? `${plural(spread.excluded, 'book')} published before 1900 left out — they stretch the scale so far that the modern decades vanish.`
+                      : undefined
+                  }
+                >
+                  <RankedBars
+                    data={spread.buckets.map((b) => ({
+                      label: b.label,
+                      value: b.count,
+                      detail: plural(b.count, 'book'),
+                    }))}
+                    unit="books"
+                  />
+                </Panel>
+              </>
+            ),
+          },
+          {
+            id: 'all',
+            label: 'All books',
+            content: (
+              <Panel title="Every book on the shelves">
+                <BookTable books={books} />
+              </Panel>
+            ),
+          },
+        ]}
+      />
+    </Shell>
+  );
+}
+
+function Notable({
+  label,
+  book,
+  detail,
+}: {
+  label: string;
+  book?: string;
+  detail?: string;
+}) {
+  return (
+    <div>
+      <dt className="text-xs font-medium tracking-wide text-ink-muted uppercase">{label}</dt>
+      <dd className="m-0 mt-1 text-sm text-ink">
+        {book ?? '—'}
+        {detail && <span className="text-ink-muted"> · {detail}</span>}
+      </dd>
+    </div>
+  );
+}
+
+function Shell({
+  meta,
+  children,
+}: {
+  meta: ReturnType<typeof loadMeta>;
+  children: React.ReactNode;
+}) {
+  const syncedAt = meta?.syncedAt
+    ? new Date(meta.syncedAt).toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'UTC',
+      })
+    : null;
+
+  return (
+    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <header className="mb-6">
+        <p className="m-0 text-lg font-semibold text-ink">{SITE.owner}&rsquo;s {SITE.title.toLowerCase()}</p>
+        <p className="m-0 mt-1 text-sm text-ink-secondary">{SITE.description}</p>
+      </header>
+
+      {children}
+
+      <footer className="mt-10 border-t border-line pt-5 text-xs text-ink-muted">
+        {/* Provenance: where the numbers came from and how fresh they are. */}
+        <p className="m-0">
+          {syncedAt ? `Synced from Goodreads on ${syncedAt} UTC` : 'Not yet synced'} ·{' '}
           <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={GOODREADS_PROFILE_URL}
+            className="underline hover:text-ink"
+            rel="noreferrer"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
+            Goodreads profile
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        </p>
+        <RefreshButton />
+        {meta?.warnings && meta.warnings.length > 0 && (
+          <ul className="m-0 mt-2 list-none p-0">
+            {meta.warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        )}
+      </footer>
     </div>
   );
 }

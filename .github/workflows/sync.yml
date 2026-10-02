@@ -1,0 +1,50 @@
+name: Sync Goodreads
+
+on:
+  schedule:
+    # Once a day. The in-app Refresh button triggers this same workflow on demand.
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+# Only one sync at a time, or two runs race to commit the same files.
+concurrency:
+  group: goodreads-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Fails loudly on a Goodreads block or layout change rather than
+      # committing an empty library. Stale data beats wiped data.
+      - name: Fetch from Goodreads
+        env:
+          GOODREADS_RSS_KEY: ${{ secrets.GOODREADS_RSS_KEY }}
+        run: npm run sync
+
+      - name: Check the stats still compute
+        run: npm test
+
+      - name: Commit if anything changed
+        run: |
+          if git diff --quiet -- data/; then
+            echo "No change since the last sync — nothing to commit."
+            exit 0
+          fi
+          git config user.name "goodreads-sync"
+          git config user.email "noreply@github.com"
+          git add data/
+          git commit -m "Sync Goodreads data ($(date -u +%Y-%m-%d))"
+          git push

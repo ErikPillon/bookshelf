@@ -114,6 +114,22 @@ test('year bucketing skips books with no read date', () => {
   );
 });
 
+test('a year with nothing read still appears, as a zero', () => {
+  const stats = booksPerYear([
+    book({ dateRead: '2020-01-01' }),
+    book({ dateRead: '2023-01-01' }),
+  ]);
+  assert.deepEqual(
+    stats.map((s) => [s.year, s.books]),
+    [
+      [2020, 1],
+      [2021, 0],
+      [2022, 0],
+      [2023, 1],
+    ],
+  );
+});
+
 test('year bucketing reports missing page counts rather than hiding them', () => {
   const stats = booksPerYear([
     book({ dateRead: '2024-01-01', pages: 100 }),
@@ -244,22 +260,25 @@ test('extremes on an empty library return nulls instead of throwing', () => {
 
 // --- publication buckets ----------------------------------------------------
 
-test('ancient books collapse into one pre-1900 bucket', () => {
-  const buckets = publicationBuckets([
+test('books published before the floor are dropped and counted, not plotted', () => {
+  const spread = publicationBuckets([
     book({ publishedYear: -500 }),
     book({ publishedYear: 180 }),
     book({ publishedYear: 1890 }),
     book({ publishedYear: 1995 }),
     book({ publishedYear: 1999 }),
+    book({ publishedYear: 2003 }),
+    // No year at all: neither plotted nor counted as excluded.
     book({ publishedYear: null }),
   ]);
   assert.deepEqual(
-    buckets.map((b) => [b.label, b.count]),
+    spread.buckets.map((b) => [b.label, b.count]),
     [
-      ['Pre-1900', 3],
       ['1990s', 2],
+      ['2000s', 1],
     ],
   );
+  assert.equal(spread.excluded, 3);
 });
 
 test('BC publication years format readably', () => {

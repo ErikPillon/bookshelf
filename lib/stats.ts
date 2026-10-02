@@ -100,6 +100,16 @@ export function booksPerYear(books: Book[]): YearStats[] {
     else buckets.set(year, [book]);
   }
 
+  if (buckets.size === 0) return [];
+
+  // Fill the gaps: a year with nothing read must show as zero, not vanish.
+  // Omitting it spaces the bars evenly and makes a broken run look continuous.
+  const years = [...buckets.keys()];
+  const [first, last] = [Math.min(...years), Math.max(...years)];
+  for (let year = first; year <= last; year++) {
+    if (!buckets.has(year)) buckets.set(year, []);
+  }
+
   return [...buckets.entries()]
     .map(([year, bucket]) => {
       const rated = bucket.filter((b) => b.myRating !== null);
@@ -265,29 +275,40 @@ export interface DecadeBucket {
   count: number;
 }
 
+export interface PublicationSpread {
+  buckets: DecadeBucket[];
+  /** Books dropped for being older than the floor — reported, not hidden. */
+  excluded: number;
+}
+
 /**
- * How old the books you read are. Everything before `floorYear` collapses into
- * one bucket: a linear decade axis running from 500 BC to the 2020s devotes
- * most of its width to buckets holding a single book.
+ * How old the books you read are, by decade of publication.
+ *
+ * Anything published before `floorYear` is dropped rather than plotted: the
+ * library reaches back to 500 BC, and those few books stretch the axis so far
+ * that the modern decades — where almost everything actually sits — compress
+ * into nothing. The count of what was dropped is returned so the chart can say so.
  */
-export function publicationBuckets(books: Book[], floorYear = 1900): DecadeBucket[] {
+export function publicationBuckets(books: Book[], floorYear = 1900): PublicationSpread {
   const counts = new Map<number, number>();
-  const PRE = floorYear - 10;
+  let excluded = 0;
 
   for (const book of readBooks(books)) {
     if (book.publishedYear === null) continue;
-    const decade =
-      book.publishedYear < floorYear ? PRE : Math.floor(book.publishedYear / 10) * 10;
+    if (book.publishedYear < floorYear) {
+      excluded += 1;
+      continue;
+    }
+    const decade = Math.floor(book.publishedYear / 10) * 10;
     counts.set(decade, (counts.get(decade) ?? 0) + 1);
   }
 
-  return [...counts.entries()]
-    .map(([from, count]) => ({
-      from,
-      count,
-      label: from === PRE ? `Pre-${floorYear}` : `${from}s`,
-    }))
-    .sort((a, b) => a.from - b.from);
+  return {
+    excluded,
+    buckets: [...counts.entries()]
+      .map(([from, count]) => ({ from, count, label: `${from}s` }))
+      .sort((a, b) => a.from - b.from),
+  };
 }
 
 /** Formats a publication year, including the BC years in the library. */

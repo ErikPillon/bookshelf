@@ -3,7 +3,12 @@
 A static reading-stats page for one user, built from Goodreads RSS feeds, deployed on Vercel (Hobby).
 
 **Source profile:** https://www.goodreads.com/user/show/91605767-erik-pillon (public)
-**Plan written:** 2026-10-02
+**Plan written:** 2026-10-02 · **Built:** 2026-10-02
+
+> **Status: phases 0–5 shipped.** See `README.md` for how the thing actually works
+> and how to deploy it. This document is kept as the record of the decisions and
+> the reasoning behind them; where the build diverged from the plan, the sections
+> below say so inline.
 
 ---
 
@@ -18,7 +23,7 @@ Checked directly against the live profile and feeds before writing this:
 | Shelf counts | 229 read · 17 currently-reading · 422 to-read · 3 did-not-finish |
 | Ratings | 222 ratings, 3.88 average · 14 written reviews |
 | 2026 challenge | 20 of 52 books |
-| Shelf RSS pagination | `?shelf=read&per_page=100&page=N` works — full history is 3 requests |
+| Shelf RSS pagination | `?per_page=100&page=N` works. **Changed in build:** one `shelf=%23ALL%23` feed with the RSS key covers all four shelves in 7 pages, which beat four separate paginated feeds |
 | Updates RSS | `/user/updates_rss/91605767` exists and carries page-progress events |
 
 ### What the shelf feeds give us
@@ -38,10 +43,17 @@ https://www.goodreads.com/review/list_rss/91605767?shelf=did-not-finish
 
 ### What they do NOT give us
 
-1. **Reading-challenge goal and count** (the `20 of 52`) — profile HTML only.
-2. **Per-book progress** (`page X of Y`) for currently-reading — profile HTML, or the updates feed (see Phase 6).
+1. **Reading-challenge goal and count** (the `20 of 52`).
+2. **Per-book progress** (`page X of Y`) for currently-reading.
 
-Both are treated as *optional enrichment*. The page must render correctly without them.
+**Changed in build.** The challenge widget turned out not to be in the server HTML
+at all — it is rendered client-side, so it cannot be scraped with a plain fetch.
+That forced a better design: the *goal* lives in `lib/config.ts` (one integer a
+year) and the *count* is derived from read dates. Verified to reproduce Goodreads'
+own number exactly (20). No challenge scraping at all.
+
+Progress is still partly scraped, from an `onclick="clickPageOfBook(bookId, page, …)"`
+attribute, and remains optional enrichment — the page renders correctly without it.
 
 ---
 
@@ -112,14 +124,18 @@ timeout. All the actual fetching stays in the Action, in one place.
 
 ---
 
-## 3. Seed the history from a CSV export (one-time, manual — do this first)
+## 3. Seed the history from a CSV export — *done*
 
 Goodreads → *My Books* → *Import and export* → **Export Library**. Gives a CSV with `Date Read`,
 `Date Added`, `My Rating`, `Number of Pages`, `Original Publication Year`, `Bookshelves`,
 `Read Count`, `Exclusive Shelf`.
 
-This is necessary, not optional: RSS `user_read_at` is empty for many older entries and `num_pages`
-is occasionally missing. Without the seed, "books per year" has holes before roughly 2019.
+**Changed in build.** The gap turned out to be far smaller than feared — only 13 of
+229 read books lack a date in the CSV, and 10 in RSS. So the export is not the
+rescue it was billed as; it earns its place for three other things RSS has no
+equivalent for: the clean `Exclusive Shelf` column, original publication years,
+and read counts. RSS in turn has covers and community ratings the CSV lacks. The
+two are complementary, so the merge is permanent rather than a one-time seed.
 
 Commit it as `data/seed/goodreads_export.csv` so the backfill stays reproducible.
 
@@ -131,7 +147,7 @@ Commit it as `data/seed/goodreads_export.csv` so the backfill stays reproducible
 
 A single script, `scripts/sync.ts`:
 
-1. Fetch the four shelf feeds, paginating `per_page=100&page=N` until a page returns < 100 items.
+1. Fetch the `#ALL#` feed, paginating `per_page=100&page=N` until a page returns < 100 items.
    ~1s delay between requests, descriptive User-Agent.
 2. Fetch the profile HTML **once**, extracting only the two missing fields (challenge, progress).
    Isolated in its own module so it can fail without taking the sync down.
@@ -180,7 +196,11 @@ publication-year spread.
 
 **Extremes.** Longest / shortest / oldest book, fastest finish.
 
-**Full log.** Searchable, sortable table of all 229 — the archive view.
+**Full log.** Searchable, sortable table of all 671 — the archive view.
+
+**Changed in build.** These became five tabs rather than one long page — `This year`,
+`Reading now`, `History`, `Taste`, `All books` — so each view answers one question
+and carries at most one chart. The active tab lives in the URL.
 
 Design pass uses the `ui-ux` and `dataviz` skills so charts read as one system and work in both
 light and dark.
@@ -208,7 +228,7 @@ scraping at all**.
 The updates feed is a **rolling window of recent activity only**. It cannot be backfilled. Every day
 we don't capture it is a day of page-level history lost permanently.
 
-**So: start capturing it in Phase 1, display it in Phase 6.** The sync script appends raw parsed
+**Shipped in Phase 1 as planned:** capture now, display later. The sync script appends raw parsed
 update events to `data/updates.json`, deduped by `guid`. Nothing in the UI reads it yet. Cost is a
 few lines and one extra HTTP request; the payoff is that when we build the feature, there's already
 months of history behind it.
@@ -239,6 +259,8 @@ CDN allowlisted as the interim option.
 | 6 | Polish: mobile, dark mode, OG image, cover mirroring |
 | 7 | *Later:* reading-updates analytics on the accumulated `updates.json` |
 
+Phases 0–6 are done. Phase 7 waits on `updates.json` accumulating enough history.
+
 ---
 
 ## 9. Risks
@@ -257,9 +279,18 @@ CDN allowlisted as the interim option.
 
 ---
 
-## 10. Open questions
+## 10. Open questions — resolved
 
-1. **Currently-reading triage.** 17 books are open. Treat all as active, or split active vs. parked?
-2. **To-read.** 422 books. Does it get a section at all, or stay out of a page about what you've
-   actually read?
-3. **Repo name.** `bookshelf` is a placeholder — easy to change before the first push.
+1. **Currently-reading triage.** Split. 14 of the 17 have had no activity for over
+   60 days (several over 1,000), so showing them as equally "active" would be a
+   lie. The live ones are listed; the parked ones collapse behind a disclosure.
+2. **To-read.** No section of its own. It is reachable from the shelf filter in
+   `All books` and nowhere else — this is a page about what has been read.
+3. **Repo name.** Kept as `bookshelf`.
+
+### Noted while building, left alone
+
+*Principles: Life and Work* sits on currently-reading twice, as two separate
+editions with their own review records (one at 0%, one at 54%). That is genuine
+Goodreads data, not a duplicate introduced here, so the site shows both rather
+than silently merging them. Worth cleaning up on Goodreads if it bothers you.
