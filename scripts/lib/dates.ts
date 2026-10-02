@@ -26,10 +26,19 @@ export function parseCsvDate(raw: string | null | undefined): string | null {
   return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
 }
 
-/** Full-precision timestamp, for update events where ordering matters. */
+/**
+ * Full-precision timestamp, for events where ordering matters.
+ *
+ * Returns null rather than a fallback when parsing fails: a "now" fallback
+ * silently rewrites the timestamp on every sync, which both churns the data
+ * file and makes "days since last activity" permanently read as zero.
+ */
 export function parseFeedTimestamp(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const d = new Date(raw.trim());
+  // The profile writes "Sep 30, 2026 03:03PM" — Date() needs a space before the
+  // meridiem to parse it.
+  const normalized = raw.trim().replace(/(\d)(AM|PM)$/i, '$1 $2');
+  const d = new Date(normalized);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 

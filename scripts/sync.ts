@@ -9,7 +9,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Book, Library, Meta, Shelf, UpdateEvent } from '../lib/types';
+import type { Book, Library, Meta, Progress, Shelf, UpdateEvent } from '../lib/types';
 import { SHELVES } from '../lib/types';
 import {
   CHALLENGE_GOALS,
@@ -171,12 +171,13 @@ async function main() {
 
   // --- progress ------------------------------------------------------------
   // Two sources, both partial. Latest timestamp wins.
-  const progressByBook = new Map<string, { page: number; of: number; at: string }>();
+  const progressByBook = new Map<string, Progress>();
+  const newer = (a: string | null, b: string | null) => (a ?? '') > (b ?? '');
 
   for (const event of updates) {
     if (event.type !== 'progress' || !event.bookId || event.page === null || !event.of) continue;
     const existing = progressByBook.get(event.bookId);
-    if (!existing || event.at > existing.at) {
+    if (!existing || newer(event.at, existing.at)) {
       progressByBook.set(event.bookId, { page: event.page, of: event.of, at: event.at });
     }
   }
@@ -186,7 +187,7 @@ async function main() {
     const scraped = await fetchProfileProgress();
     for (const [bookId, progress] of scraped) {
       const existing = progressByBook.get(bookId);
-      if (!existing || progress.at > existing.at) progressByBook.set(bookId, progress);
+      if (!existing || newer(progress.at, existing.at)) progressByBook.set(bookId, progress);
     }
     profileOk = true;
     console.log(`  profile widget: progress for ${scraped.size} books`);

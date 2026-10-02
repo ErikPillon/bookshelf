@@ -7,8 +7,11 @@ export const SHELVES: Shelf[] = ['read', 'currently-reading', 'to-read', 'did-no
 export interface Progress {
   page: number;
   of: number;
-  /** ISO timestamp of the status update this came from. */
-  at: string;
+  /**
+   * ISO timestamp of the status update this came from, or null when the source
+   * did not carry a parseable one. Never substituted with the sync time.
+   */
+  at: string | null;
 }
 
 export interface Book {

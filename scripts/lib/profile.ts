@@ -40,11 +40,7 @@ export async function fetchProfileProgress(): Promise<Map<string, Progress>> {
     if (!Number.isFinite(page) || !Number.isFinite(of) || of <= 0) return;
 
     const when = />([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4}[^<]*)</.exec(onclick);
-    out.set(bookId, {
-      page,
-      of,
-      at: parseFeedTimestamp(when?.[1]) ?? new Date().toISOString(),
-    });
+    out.set(bookId, { page, of, at: parseFeedTimestamp(when?.[1]) });
   });
 
   return out;
