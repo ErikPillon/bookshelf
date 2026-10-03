@@ -948,7 +948,7 @@
       "pages": 240,
       "publishedYear": 2023,
       "myRating": null,
-      "avgRating": 4.1,
+      "avgRating": 4.11,
       "dateRead": null,
       "previousReadDate": null,
       "dateAdded": "2024-04-03",
@@ -1466,7 +1466,7 @@
       "pages": 374,
       "publishedYear": 2006,
       "myRating": null,
-      "avgRating": 3.89,
+      "avgRating": 3.88,
       "dateRead": null,
       "previousReadDate": null,
       "dateAdded": "2021-12-23",
@@ -4953,7 +4953,7 @@
       "pages": 592,
       "publishedYear": 2016,
       "myRating": null,
-      "avgRating": 4.33,
+      "avgRating": 4.32,
       "dateRead": null,
       "previousReadDate": null,
       "dateAdded": "2021-01-06",
@@ -6662,7 +6662,7 @@
       "progress": {
         "page": 0,
         "of": 592,
-        "at": "2026-08-17T11:13:00.000Z"
+        "at": "2026-08-17T13:13:00.000Z"
       },
       "removedAt": null
     },
@@ -6754,7 +6754,7 @@
       "progress": {
         "page": 320,
         "of": 592,
-        "at": "2026-09-03T12:51:00.000Z"
+        "at": "2026-09-03T14:51:00.000Z"
       },
       "removedAt": null
     },
