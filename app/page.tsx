@@ -1,7 +1,7 @@
 import { BookTable } from '@/components/BookTable';
 import { RefreshButton } from '@/components/RefreshButton';
 import { ChallengeHero } from '@/components/ChallengeHero';
-import { Chart, RankedBars, type BarDatum } from '@/components/Chart';
+import { Chart, RankedBars, type BarDatum, type ChartItem } from '@/components/Chart';
 import { ReadingNow } from '@/components/ReadingNow';
 import { Tabs } from '@/components/Tabs';
 import { DataTable, nf, Panel, plural, StatTile } from '@/components/ui';
@@ -21,6 +21,13 @@ import {
   topTags,
   totals,
 } from '@/lib/stats';
+
+/** Most recently finished first — the useful order for a hover list. */
+function toItems(members: { title: string; author: string; pages: number | null; dateRead: string | null }[]): ChartItem[] {
+  return [...members]
+    .sort((a, b) => (b.dateRead ?? '').localeCompare(a.dateRead ?? ''))
+    .map((b) => ({ title: b.title, author: b.author, pages: b.pages }));
+}
 
 const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -63,21 +70,40 @@ export default function Home() {
   const monthData: BarDatum[] = months.map((m, i) => ({
     label: MONTHS[i]!,
     shortLabel: MONTHS[i]![0],
-    value: m.books,
-    detail: m.pages > 0 ? `${nf.format(m.pages)} pages` : undefined,
+    books: m.books,
+    pages: m.pages,
+    booksMissingPages: m.booksMissingPages,
+    items: toItems(m.members),
   }));
 
   const yearData: BarDatum[] = years.map((y) => ({
     label: String(y.year),
     shortLabel: `’${String(y.year).slice(2)}`,
-    value: y.books,
-    detail: `${nf.format(y.pages)} pages`,
+    books: y.books,
+    pages: y.pages,
+    booksMissingPages: y.booksMissingPages,
+    items: toItems(y.members),
   }));
 
   const ratingData: BarDatum[] = ratings.histogram.map((h) => ({
     label: `${h.rating}★`,
-    value: h.count,
+    books: h.books,
+    pages: h.pages,
+    booksMissingPages: h.booksMissingPages,
+    items: toItems(h.members),
   }));
+
+  const toRanked = (
+    rows: { label: string; books: number; pages: number; booksMissingPages: number; members: typeof books; averageRating?: number | null }[],
+  ): BarDatum[] =>
+    rows.map((row) => ({
+      label: row.label,
+      books: row.books,
+      pages: row.pages,
+      booksMissingPages: row.booksMissingPages,
+      items: toItems(row.members),
+      note: row.averageRating ? `${row.averageRating.toFixed(1)}★` : undefined,
+    }));
 
   const spread = publicationBuckets(books);
 
@@ -99,10 +125,9 @@ export default function Home() {
                   pagesThisYear={pagesThisYear}
                   streakMonths={streak}
                 />
-                <Panel title={`Books finished each month in ${year}`}>
+                <Panel title={`Finished each month in ${year}`}>
                   <Chart
                     data={monthData}
-                    unit="books"
                     range={`month in ${year}`}
                     emptyMessage={`Nothing finished in ${year} yet.`}
                   />
@@ -150,8 +175,8 @@ export default function Home() {
                   <StatTile label="Read more than once" value={plural(t.rereads, 'book')} />
                 </div>
 
-                <Panel title="Books finished each year">
-                  <Chart data={yearData} unit="books" range="year" />
+                <Panel title="Finished each year">
+                  <Chart data={yearData} range="year" />
                   <DataTable
                     caption="Books and pages finished per year"
                     columns={['Year', 'Books', 'Pages']}
@@ -183,38 +208,24 @@ export default function Home() {
                       : undefined
                   }
                 >
-                  <Chart data={ratingData} unit="books" range="rating" />
+                  <Chart data={ratingData} range="rating" />
                   <DataTable
                     caption="Number of books at each rating"
-                    columns={['Rating', 'Books']}
-                    rows={ratings.histogram.map((h) => [`${h.rating} stars`, h.count])}
+                    columns={['Rating', 'Books', 'Pages']}
+                    rows={ratings.histogram.map((h) => [`${h.rating} stars`, h.books, h.pages])}
                   />
                 </Panel>
 
                 <div className="grid gap-4 lg:grid-cols-2">
                   <Panel title="Most read authors">
-                    <RankedBars
-                      data={topAuthors(books, 8).map((a) => ({
-                        label: a.label,
-                        value: a.count,
-                        detail: `${plural(a.count, 'book')}${a.averageRating ? ` · ${a.averageRating.toFixed(1)}★` : ''}`,
-                      }))}
-                      unit="books"
-                    />
+                    <RankedBars data={toRanked(topAuthors(books, 8))} />
                   </Panel>
 
                   <Panel
                     title="Shelves"
                     note={`Only ${taggedRead} of ${nf.format(t.read)} read books are tagged, so this is a partial picture.`}
                   >
-                    <RankedBars
-                      data={topTags(books, 8).map((tag) => ({
-                        label: tag.label,
-                        value: tag.count,
-                        detail: plural(tag.count, 'book'),
-                      }))}
-                      unit="books"
-                    />
+                    <RankedBars data={toRanked(topTags(books, 8))} />
                   </Panel>
                 </div>
 
@@ -226,14 +237,7 @@ export default function Home() {
                       : undefined
                   }
                 >
-                  <RankedBars
-                    data={spread.buckets.map((b) => ({
-                      label: b.label,
-                      value: b.count,
-                      detail: plural(b.count, 'book'),
-                    }))}
-                    unit="books"
-                  />
+                  <RankedBars data={toRanked(spread.buckets)} />
                 </Panel>
               </>
             ),

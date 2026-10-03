@@ -10,6 +10,7 @@ import {
   extremes,
   formatYear,
   publicationBuckets,
+  topAuthors,
   ratingStats,
   totals,
 } from './stats';
@@ -200,7 +201,7 @@ test('rating delta compares only books that have both numbers', () => {
 
 test('rating histogram covers all five buckets', () => {
   const stats = ratingStats([book({ myRating: 5 }), book({ myRating: 5 })]);
-  assert.deepEqual(stats.histogram.map((h) => h.count), [0, 0, 0, 0, 2]);
+  assert.deepEqual(stats.histogram.map((h) => h.books), [0, 0, 0, 0, 2]);
 });
 
 // --- currently reading ------------------------------------------------------
@@ -272,7 +273,7 @@ test('books published before the floor are dropped and counted, not plotted', ()
     book({ publishedYear: null }),
   ]);
   assert.deepEqual(
-    spread.buckets.map((b) => [b.label, b.count]),
+    spread.buckets.map((b) => [b.label, b.books]),
     [
       ['1990s', 2],
       ['2000s', 1],
@@ -285,4 +286,60 @@ test('BC publication years format readably', () => {
   assert.equal(formatYear(-500), '500 BC');
   assert.equal(formatYear(2022), '2022');
   assert.equal(formatYear(null), 'Unknown');
+});
+
+// --- bucket members ---------------------------------------------------------
+
+test('every bucket carries the books behind it, for the hover list', () => {
+  const months = booksPerMonth(
+    [
+      book({ dateRead: '2026-05-10', title: 'One', pages: 100 }),
+      book({ dateRead: '2026-05-20', title: 'Two', pages: 250 }),
+      book({ dateRead: '2026-06-01', title: 'Three', pages: 50 }),
+    ],
+    2026,
+  );
+  assert.deepEqual(months[4]!.members.map((b) => b.title), ['One', 'Two']);
+  assert.equal(months[4]!.books, 2);
+  assert.equal(months[4]!.pages, 350);
+  assert.deepEqual(months[5]!.members.map((b) => b.title), ['Three']);
+});
+
+test('a bucket page total is a floor, and says how many counts are missing', () => {
+  const [year] = booksPerYear([
+    book({ dateRead: '2024-01-01', pages: 300 }),
+    book({ dateRead: '2024-02-01', pages: null }),
+  ]);
+  assert.equal(year!.pages, 300);
+  assert.equal(year!.booksMissingPages, 1);
+  assert.equal(year!.members.length, 2);
+});
+
+test('ranked groups sum pages and keep their members', () => {
+  const [top] = topAuthors(
+    [
+      book({ author: 'Feynman', pages: 200, myRating: 5 }),
+      book({ author: 'Feynman', pages: 300, myRating: 3 }),
+      book({ author: 'Rovelli', pages: 100 }),
+    ],
+    5,
+  );
+  assert.equal(top!.label, 'Feynman');
+  assert.equal(top!.books, 2);
+  assert.equal(top!.pages, 500);
+  assert.equal(top!.averageRating, 4);
+  assert.equal(top!.members.length, 2);
+});
+
+test('ranked groups order by book count, not page count', () => {
+  // One long book must not outrank two short ones in the default view.
+  const ranked = topAuthors(
+    [
+      book({ author: 'Long', pages: 1200 }),
+      book({ author: 'Short', pages: 100 }),
+      book({ author: 'Short', pages: 120 }),
+    ],
+    5,
+  );
+  assert.deepEqual(ranked.map((r) => r.label), ['Short', 'Long']);
 });

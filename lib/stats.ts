@@ -23,6 +23,28 @@ function dayOfYear(date: Date): number {
   return Math.floor((date.getTime() - start) / DAY_MS) + 1;
 }
 
+/**
+ * What every grouping on the page reports. Charts switch between `books` and
+ * `pages` without regrouping, and list `members` on hover.
+ */
+export interface Bucket {
+  books: number;
+  /** Sum of known page counts — a floor, not a total. */
+  pages: number;
+  /** Books here with no page count, so `pages` can be qualified honestly. */
+  booksMissingPages: number;
+  members: Book[];
+}
+
+function summarize(members: Book[]): Bucket {
+  return {
+    books: members.length,
+    pages: members.reduce((sum, b) => sum + (b.pages ?? 0), 0),
+    booksMissingPages: members.filter((b) => b.pages === null).length,
+    members,
+  };
+}
+
 // --- challenge --------------------------------------------------------------
 
 export interface ChallengeStats {
@@ -80,12 +102,8 @@ export function challengeStats(
 
 // --- per-year / per-month ---------------------------------------------------
 
-export interface YearStats {
+export interface YearStats extends Bucket {
   year: number;
-  books: number;
-  pages: number;
-  /** Books in this year whose page count is unknown — pages is a floor, not a total. */
-  booksMissingPages: number;
   averageRating: number | null;
 }
 
@@ -111,13 +129,11 @@ export function booksPerYear(books: Book[]): YearStats[] {
   }
 
   return [...buckets.entries()]
-    .map(([year, bucket]) => {
-      const rated = bucket.filter((b) => b.myRating !== null);
+    .map(([year, members]) => {
+      const rated = members.filter((b) => b.myRating !== null);
       return {
+        ...summarize(members),
         year,
-        books: bucket.length,
-        pages: bucket.reduce((sum, b) => sum + (b.pages ?? 0), 0),
-        booksMissingPages: bucket.filter((b) => b.pages === null).length,
         averageRating:
           rated.length > 0
             ? rated.reduce((s, b) => s + (b.myRating ?? 0), 0) / rated.length
@@ -127,30 +143,21 @@ export function booksPerYear(books: Book[]): YearStats[] {
     .sort((a, b) => a.year - b.year);
 }
 
-export interface MonthStats {
+export interface MonthStats extends Bucket {
   /** 1-12 */
   month: number;
-  books: number;
-  pages: number;
 }
 
 export function booksPerMonth(books: Book[], year: number): MonthStats[] {
-  const months: MonthStats[] = Array.from({ length: 12 }, (_, i) => ({
-    month: i + 1,
-    books: 0,
-    pages: 0,
-  }));
+  const months: Book[][] = Array.from({ length: 12 }, () => []);
 
   for (const book of readBooks(books)) {
     if (!book.dateRead || yearOf(book.dateRead) !== year) continue;
     const month = Number.parseInt(book.dateRead.slice(5, 7), 10);
-    const bucket = months[month - 1];
-    if (!bucket) continue;
-    bucket.books += 1;
-    bucket.pages += book.pages ?? 0;
+    months[month - 1]?.push(book);
   }
 
-  return months;
+  return months.map((members, i) => ({ ...summarize(members), month: i + 1 }));
 }
 
 /** Longest run of consecutive months, ending at or before `year`-`month`, with at least one book finished. */
@@ -180,8 +187,12 @@ export function currentMonthStreak(books: Book[], now: Date): number {
 
 // --- ratings ----------------------------------------------------------------
 
+export interface RatingBucket extends Bucket {
+  rating: number;
+}
+
 export interface RatingStats {
-  histogram: { rating: number; count: number }[];
+  histogram: RatingBucket[];
   myAverage: number | null;
   /** Community average across the same books, so the two are comparable. */
   communityAverage: number | null;
@@ -196,8 +207,8 @@ export function ratingStats(books: Book[]): RatingStats {
   const rated = read.filter((b) => b.myRating !== null);
 
   const histogram = [1, 2, 3, 4, 5].map((rating) => ({
+    ...summarize(rated.filter((b) => b.myRating === rating)),
     rating,
-    count: rated.filter((b) => b.myRating === rating).length,
   }));
 
   const myAverage =
@@ -229,9 +240,8 @@ export function ratingStats(books: Book[]): RatingStats {
 
 // --- groupings --------------------------------------------------------------
 
-export interface Tally {
+export interface Tally extends Bucket {
   label: string;
-  count: number;
   /** Mean of your ratings within this group, where any are rated. */
   averageRating: number | null;
 }
@@ -248,18 +258,18 @@ function tally(books: Book[], keys: (b: Book) => string[]): Tally[] {
   }
 
   return [...groups.entries()]
-    .map(([label, group]) => {
-      const rated = group.filter((b) => b.myRating !== null);
+    .map(([label, members]) => {
+      const rated = members.filter((b) => b.myRating !== null);
       return {
+        ...summarize(members),
         label,
-        count: group.length,
         averageRating:
           rated.length > 0
             ? rated.reduce((s, b) => s + (b.myRating ?? 0), 0) / rated.length
             : null,
       };
     })
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    .sort((a, b) => b.books - a.books || a.label.localeCompare(b.label));
 }
 
 export const topAuthors = (books: Book[], limit = 10): Tally[] =>
@@ -268,11 +278,10 @@ export const topAuthors = (books: Book[], limit = 10): Tally[] =>
 export const topTags = (books: Book[], limit = 12): Tally[] =>
   tally(readBooks(books), (b) => b.tags).slice(0, limit);
 
-export interface DecadeBucket {
+export interface DecadeBucket extends Bucket {
   label: string;
   /** Lower bound, for sorting and axis order. */
   from: number;
-  count: number;
 }
 
 export interface PublicationSpread {
@@ -290,7 +299,7 @@ export interface PublicationSpread {
  * into nothing. The count of what was dropped is returned so the chart can say so.
  */
 export function publicationBuckets(books: Book[], floorYear = 1900): PublicationSpread {
-  const counts = new Map<number, number>();
+  const groups = new Map<number, Book[]>();
   let excluded = 0;
 
   for (const book of readBooks(books)) {
@@ -300,13 +309,15 @@ export function publicationBuckets(books: Book[], floorYear = 1900): Publication
       continue;
     }
     const decade = Math.floor(book.publishedYear / 10) * 10;
-    counts.set(decade, (counts.get(decade) ?? 0) + 1);
+    const group = groups.get(decade);
+    if (group) group.push(book);
+    else groups.set(decade, [book]);
   }
 
   return {
     excluded,
-    buckets: [...counts.entries()]
-      .map(([from, count]) => ({ from, count, label: `${from}s` }))
+    buckets: [...groups.entries()]
+      .map(([from, members]) => ({ ...summarize(members), from, label: `${from}s` }))
       .sort((a, b) => a.from - b.from),
   };
 }

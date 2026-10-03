@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useSearchParam } from './useSearchParam';
 
 type State = 'idle' | 'starting' | 'started' | 'error';
 
@@ -12,13 +13,9 @@ type State = 'idle' | 'starting' | 'started' | 'error';
  * ever sent to this site's own refresh endpoint, which compares it server side.
  */
 export function RefreshButton() {
-  const [key, setKey] = useState<string | null>(null);
+  const key = useSearchParam('key');
   const [state, setState] = useState<State>('idle');
   const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    setKey(new URLSearchParams(window.location.search).get('key'));
-  }, []);
 
   if (!key) return null;
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useSearchParam } from './useSearchParam';
 
 export interface TabPanel {
   id: string;
@@ -15,15 +16,15 @@ export interface TabPanel {
  * does what it should.
  */
 export function Tabs({ panels }: { panels: TabPanel[] }) {
-  const [active, setActive] = useState(panels[0]?.id ?? '');
+  const fromUrl = useSearchParam('view');
+  const [chosen, setChosen] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get('view');
-    if (fromUrl && panels.some((p) => p.id === fromUrl)) setActive(fromUrl);
-  }, [panels]);
+  const active =
+    chosen ??
+    (fromUrl && panels.some((p) => p.id === fromUrl) ? fromUrl : (panels[0]?.id ?? ''));
 
   function select(id: string) {
-    setActive(id);
+    setChosen(id);
     const url = new URL(window.location.href);
     url.searchParams.set('view', id);
     window.history.replaceState(null, '', url);

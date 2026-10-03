@@ -37,6 +37,9 @@ jobs:
       - name: Check the stats still compute
         run: npm test
 
+      - name: Lint
+        run: npm run lint
+
       - name: Commit if anything changed
         run: |
           if git diff --quiet -- data/; then

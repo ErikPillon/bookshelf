@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import type { Book } from '@/lib/types';
-import { formatYear } from '@/lib/stats';
 import { nf } from './ui';
 
 type SortKey = 'dateRead' | 'title' | 'author' | 'myRating' | 'pages';
