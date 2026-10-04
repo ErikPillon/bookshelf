@@ -98,5 +98,25 @@
     "page": 46,
     "of": 293,
     "raw": "Erik is on page 46 of 293 of Mastering 'Metrics"
+  },
+  {
+    "guid": "UserStatus1344035655",
+    "type": "progress",
+    "at": "2026-10-03T20:14:56.000Z",
+    "bookId": "23986891",
+    "bookTitle": "Mastering 'Metrics",
+    "page": 60,
+    "of": 293,
+    "raw": "Erik is on page 60 of 293 of Mastering 'Metrics"
+  },
+  {
+    "guid": "ReadStatus11458551103",
+    "type": "started",
+    "at": "2026-10-03T20:18:40.000Z",
+    "bookId": "21856367",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik started reading 'The Innovators: How a Group of Hackers, Geniuses and Geeks Created the Digital Revolution'"
   }
 ]
