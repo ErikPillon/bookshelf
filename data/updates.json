@@ -118,5 +118,45 @@
     "page": null,
     "of": null,
     "raw": "Erik started reading 'The Innovators: How a Group of Hackers, Geniuses and Geeks Created the Digital Revolution'"
+  },
+  {
+    "guid": "UserStatus1347690333",
+    "type": "progress",
+    "at": "2026-10-10T22:18:06.000Z",
+    "bookId": "21856367",
+    "bookTitle": "The Innovators",
+    "page": 70,
+    "of": 542,
+    "raw": "Erik is on page 70 of 542 of The Innovators"
+  },
+  {
+    "guid": "Review8868252925",
+    "type": "review",
+    "at": "2026-10-10T22:18:56.000Z",
+    "bookId": "34941133",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik added 'Principles: Life and Work'"
+  },
+  {
+    "guid": "ReadStatus11485971943",
+    "type": "started",
+    "at": "2026-10-10T22:19:24.000Z",
+    "bookId": "61089534",
+    "bookTitle": null,
+    "page": null,
+    "of": null,
+    "raw": "Erik started reading 'A Random Walk Down Wall Street: The Best Investment Guide That Money Can Buy'"
+  },
+  {
+    "guid": "UserStatus1347691205",
+    "type": "progress",
+    "at": "2026-10-10T22:20:07.000Z",
+    "bookId": "61089534",
+    "bookTitle": "A Random Walk Down Wall S",
+    "page": 100,
+    "of": 432,
+    "raw": "Erik is on page 100 of 432 of A Random Walk Down Wall S"
   }
 ]
