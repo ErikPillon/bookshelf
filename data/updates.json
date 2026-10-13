@@ -158,5 +158,15 @@
     "page": 100,
     "of": 432,
     "raw": "Erik is on page 100 of 432 of A Random Walk Down Wall S"
+  },
+  {
+    "guid": "UserStatus1349010644",
+    "type": "progress",
+    "at": "2026-10-13T07:27:29.000Z",
+    "bookId": "61089534",
+    "bookTitle": "A Random Walk Down Wall S",
+    "page": 127,
+    "of": 432,
+    "raw": "Erik is on page 127 of 432 of A Random Walk Down Wall S"
   }
 ]
