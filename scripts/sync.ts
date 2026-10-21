@@ -20,6 +20,7 @@ import { fetchAllBooks } from './lib/rss';
 import { loadCsvSeed } from './lib/csv';
 import { fetchUpdates } from './lib/updates';
 import { fetchProfileProgress } from './lib/profile';
+import { fromCsvOnly, mergeBook } from './lib/merge';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SEED_CSV = path.join(DATA_DIR, 'seed', 'goodreads_library_export.csv');
@@ -41,60 +42,6 @@ function readJson<T>(file: string, fallback: T): T {
 function warn(message: string) {
   warnings.push(message);
   console.warn(`  ! ${message}`);
-}
-
-/**
- * Merge precedence, by source strength per field:
- *  - RSS wins on live fields (ratings, dates, tags, review, cover, avg rating).
- *  - CSV wins on `shelf` (the only clean exclusive-shelf signal), on
- *    `publishedYear` (original publication rather than edition year), and on
- *    `readCount` (absent from RSS entirely).
- *  - CSV fills any gap RSS leaves null.
- */
-function merge(rss: Book, csv: Partial<Book> | undefined): Book {
-  if (!csv) return rss;
-  return {
-    ...rss,
-    isbn: rss.isbn ?? csv.isbn ?? null,
-    pages: rss.pages ?? csv.pages ?? null,
-    publishedYear: csv.publishedYear ?? rss.publishedYear,
-    myRating: rss.myRating ?? csv.myRating ?? null,
-    dateRead: rss.dateRead ?? csv.dateRead ?? null,
-    // Re-reads: RSS reports the latest read, the CSV an earlier one. Keep both.
-    previousReadDate:
-      rss.dateRead && csv.dateRead && rss.dateRead !== csv.dateRead ? csv.dateRead : null,
-    dateAdded: rss.dateAdded ?? csv.dateAdded ?? null,
-    tags: rss.tags.length > 0 ? rss.tags : csv.tags ?? [],
-    review: rss.review ?? csv.review ?? null,
-    shelf: csv.shelf ?? rss.shelf,
-    readCount: csv.readCount ?? rss.readCount,
-  };
-}
-
-/** A CSV row with no RSS counterpart still belongs in the library. */
-function fromCsvOnly(csv: Partial<Book> & { bookId: string }): Book {
-  return {
-    reviewId: `csv-${csv.bookId}`,
-    bookId: csv.bookId,
-    title: csv.title ?? 'Untitled',
-    author: csv.author ?? 'Unknown',
-    isbn: csv.isbn ?? null,
-    pages: csv.pages ?? null,
-    publishedYear: csv.publishedYear ?? null,
-    myRating: csv.myRating ?? null,
-    avgRating: null,
-    dateRead: csv.dateRead ?? null,
-    previousReadDate: null,
-    dateAdded: csv.dateAdded ?? null,
-    dateFirstAdded: csv.dateAdded ?? null,
-    tags: csv.tags ?? [],
-    review: csv.review ?? null,
-    coverUrl: null,
-    shelf: csv.shelf ?? 'read',
-    readCount: csv.readCount ?? 1,
-    progress: null,
-    removedAt: null,
-  };
 }
 
 async function main() {
@@ -134,11 +81,13 @@ async function main() {
         dateDisagreements++;
       }
     }
-    merged.push(merge(book, csv));
+    merged.push(mergeBook(book, csv));
   }
 
+  const today = startedAt.toISOString().slice(0, 10);
+
   for (const [bookId, csv] of csvSeed) {
-    if (!usedCsv.has(bookId)) merged.push(fromCsvOnly(csv));
+    if (!usedCsv.has(bookId)) merged.push(fromCsvOnly(csv, today));
   }
 
   if (dateDisagreements > 0) {
@@ -198,7 +147,6 @@ async function main() {
   // --- carry forward anything that vanished upstream -----------------------
   const previous = readJson<Library>(LIBRARY_JSON, { books: [] });
   const byBookId = new Map(merged.map((b) => [b.bookId, b]));
-  const today = startedAt.toISOString().slice(0, 10);
 
   for (const old of previous.books) {
     if (!byBookId.has(old.bookId)) {
@@ -218,11 +166,11 @@ async function main() {
   // --- sanity gate ---------------------------------------------------------
   // A layout change or a Cloudflare block must fail loudly, not silently wipe
   // the page. Stale data beats empty data.
+  const live = books.filter((b) => !b.removedAt);
   const counts = SHELVES.reduce(
-    (acc, shelf) => ({ ...acc, [shelf]: books.filter((b) => b.shelf === shelf).length }),
+    (acc, shelf) => ({ ...acc, [shelf]: live.filter((b) => b.shelf === shelf).length }),
     {} as Record<Shelf, number>,
   );
-  const live = books.filter((b) => !b.removedAt);
 
   if (live.length === 0) throw new Error('sanity: zero live books — refusing to write');
   if (counts.read === 0) throw new Error('sanity: read shelf is empty — refusing to write');

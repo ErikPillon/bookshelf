@@ -948,7 +948,7 @@
       "pages": 240,
       "publishedYear": 2023,
       "myRating": null,
-      "avgRating": 4.1,
+      "avgRating": 4.11,
       "dateRead": null,
       "previousReadDate": null,
       "dateAdded": "2024-04-03",
@@ -2601,7 +2601,7 @@
       "pages": 288,
       "publishedYear": 2014,
       "myRating": 4,
-      "avgRating": 3.89,
+      "avgRating": 3.9,
       "dateRead": "2024-09-09",
       "previousReadDate": null,
       "dateAdded": "2024-09-09",
@@ -3700,7 +3700,7 @@
       "tags": [],
       "review": null,
       "coverUrl": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1410191571l/21856367.jpg",
-      "shelf": "to-read",
+      "shelf": "currently-reading",
       "readCount": 0,
       "progress": {
         "page": 70,
@@ -6664,7 +6664,7 @@
       "shelf": "currently-reading",
       "readCount": 1,
       "progress": null,
-      "removedAt": null
+      "removedAt": "2026-10-21"
     },
     {
       "reviewId": "8128489802",
@@ -6749,7 +6749,7 @@
       "tags": [],
       "review": null,
       "coverUrl": "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1506862923l/34941133.jpg",
-      "shelf": "currently-reading",
+      "shelf": "read",
       "readCount": 1,
       "progress": null,
       "removedAt": null
@@ -8041,7 +8041,7 @@
       "shelf": "to-read",
       "readCount": 0,
       "progress": null,
-      "removedAt": null
+      "removedAt": "2026-10-21"
     },
     {
       "reviewId": "8539408928",

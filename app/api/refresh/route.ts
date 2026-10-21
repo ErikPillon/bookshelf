@@ -28,8 +28,16 @@ export async function POST(request: Request) {
   const repo = process.env.GITHUB_REPOSITORY;
 
   if (!secret || !token || !repo) {
+    const missing = [
+      !secret && 'REFRESH_SECRET',
+      !token && 'GITHUB_DISPATCH_TOKEN',
+      !repo && 'GITHUB_REPOSITORY',
+    ].filter(Boolean);
+
     return Response.json(
-      { error: 'Refreshing on demand is not configured for this site yet.' },
+      {
+        error: `Refreshing needs ${missing.join(', ')} set in the Vercel project settings. The daily sync runs regardless.`,
+      },
       { status: 503 },
     );
   }

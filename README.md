@@ -42,6 +42,12 @@ Notes worth knowing before changing the ingest:
 - **Re-reads** make RSS and the CSV disagree on read date by design: RSS reports
   the latest read, the CSV an earlier one. Both are kept; charts bucket on the
   most recent, which is what the challenge counts.
+- **The CSV export is a frozen snapshot and must never win on a field that
+  changes.** It may only fill a gap RSS left empty, or supply `publishedYear`
+  and `readCount`, which RSS has no equivalent for. Letting it win on `shelf`
+  silently reverted every shelf move made after the export date. A book present
+  only in the export has been deleted from Goodreads and is archived as removed
+  rather than resurrected. `scripts/lib/merge.test.ts` pins all of this down.
 
 ## Commands
 
@@ -80,9 +86,13 @@ button, set three environment variables:
 | `GITHUB_DISPATCH_TOKEN` | Fine-grained PAT, *Actions: read & write*, this repo only |
 | `GITHUB_REPOSITORY` | `owner/repo` |
 
-Then visit the site with `?key=<REFRESH_SECRET>` and a refresh button appears in
-the footer. Keep that URL in a bookmark. Without these variables the site works
-fine; the button simply never shows.
+Then visit the site once with `?key=<REFRESH_SECRET>`. The key is remembered in
+that browser and dropped from the address bar, so from then on the button is
+simply there in the footer — no query string needed, and the secret does not sit
+in your history or get copied into a shared link.
+
+Without these variables the site works fine and the daily sync still runs; the
+button just reports which ones are missing when pressed.
 
 Vercel Hobby is non-commercial use only, which a personal reading page satisfies.
 
