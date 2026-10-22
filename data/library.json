@@ -6664,7 +6664,7 @@
       "shelf": "currently-reading",
       "readCount": 1,
       "progress": null,
-      "removedAt": "2026-10-21"
+      "removedAt": "2026-10-22"
     },
     {
       "reviewId": "8128489802",
@@ -8041,7 +8041,7 @@
       "shelf": "to-read",
       "readCount": 0,
       "progress": null,
-      "removedAt": "2026-10-21"
+      "removedAt": "2026-10-22"
     },
     {
       "reviewId": "8539408928",
@@ -12184,7 +12184,7 @@
       "pages": 176,
       "publishedYear": 2022,
       "myRating": 3,
-      "avgRating": 3.2,
+      "avgRating": 3.19,
       "dateRead": "2026-03-30",
       "previousReadDate": null,
       "dateAdded": "2026-03-30",
@@ -14917,7 +14917,7 @@
       "pages": 189,
       "publishedYear": 1898,
       "myRating": 4,
-      "avgRating": 3.65,
+      "avgRating": 3.64,
       "dateRead": "2022-03-13",
       "previousReadDate": null,
       "dateAdded": "2022-03-13",
