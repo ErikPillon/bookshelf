@@ -1242,7 +1242,7 @@
       "pages": 203,
       "publishedYear": 2023,
       "myRating": null,
-      "avgRating": 4.06,
+      "avgRating": 4.07,
       "dateRead": null,
       "previousReadDate": null,
       "dateAdded": "2023-08-23",
@@ -3290,7 +3290,7 @@
       "pages": 212,
       "publishedYear": 2023,
       "myRating": null,
-      "avgRating": 4.29,
+      "avgRating": 4.28,
       "dateRead": "2025-05-28",
       "previousReadDate": null,
       "dateAdded": "2025-05-28",
@@ -6493,7 +6493,7 @@
       "pages": 609,
       "publishedYear": 1998,
       "myRating": null,
-      "avgRating": 4.4,
+      "avgRating": 4.41,
       "dateRead": null,
       "previousReadDate": null,
       "dateAdded": "2025-07-29",
@@ -6664,7 +6664,7 @@
       "shelf": "currently-reading",
       "readCount": 1,
       "progress": null,
-      "removedAt": "2026-10-23"
+      "removedAt": "2026-10-24"
     },
     {
       "reviewId": "8128489802",
@@ -6675,7 +6675,7 @@
       "pages": 304,
       "publishedYear": 2011,
       "myRating": 3,
-      "avgRating": 3.94,
+      "avgRating": 3.93,
       "dateRead": "2026-04-21",
       "previousReadDate": null,
       "dateAdded": "2026-04-21",
@@ -8041,7 +8041,7 @@
       "shelf": "to-read",
       "readCount": 0,
       "progress": null,
-      "removedAt": "2026-10-23"
+      "removedAt": "2026-10-24"
     },
     {
       "reviewId": "8539408928",
@@ -8721,7 +8721,7 @@
       "pages": 95,
       "publishedYear": 2018,
       "myRating": 5,
-      "avgRating": 4.07,
+      "avgRating": 4.06,
       "dateRead": "2020-03-09",
       "previousReadDate": null,
       "dateAdded": "2020-03-08",
@@ -8879,7 +8879,7 @@
       "pages": 173,
       "publishedYear": 2002,
       "myRating": 4,
-      "avgRating": 3.83,
+      "avgRating": 3.79,
       "dateRead": null,
       "previousReadDate": null,
       "dateAdded": "2023-12-24",
