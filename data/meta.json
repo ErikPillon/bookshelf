@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-10-27T10:31:36.619Z",
+  "syncedAt": "2026-11-12T20:45:24.005Z",
   "profileUrl": "https://www.goodreads.com/user/show/91605767-erik-pillon",
   "counts": {
     "read": 230,
@@ -14,12 +14,15 @@
     "completed": 21
   },
   "sources": {
-    "rss": true,
+    "rss": false,
     "csvSeed": true,
     "profileHtml": true,
-    "updates": true
+    "updates": false
   },
+  "csvHash": "59b9e78392d35505",
+  "csvIngestedAt": "2026-11-12",
   "warnings": [
+    "Goodreads has retired its RSS feeds, and the library export in data/seed/ is older than the reading data already stored. Add a fresh export to update this page.",
     "10 read books have no read date — excluded from per-year charts"
   ]
 }

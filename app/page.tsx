@@ -307,7 +307,11 @@ function Shell({
       <footer className="mt-10 border-t border-line pt-5 text-xs text-ink-muted">
         {/* Provenance: where the numbers came from and how fresh they are. */}
         <p className="m-0">
-          {syncedAt ? `Synced from Goodreads on ${syncedAt} UTC` : 'Not yet synced'} ·{' '}
+          {/* "Synced" would overstate it when the fetch came back with nothing. */}
+          {syncedAt
+            ? `${meta?.sources.rss === false ? 'Last checked' : 'Synced from Goodreads on'} ${syncedAt} UTC`
+            : 'Not yet synced'}{' '}
+          ·{' '}
           <a
             href={GOODREADS_PROFILE_URL}
             className="underline hover:text-ink"

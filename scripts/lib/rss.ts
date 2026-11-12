@@ -4,6 +4,20 @@ import { GOODREADS_USER_ID, REQUEST_DELAY_MS } from '../../lib/config';
 import { parseFeedDate, sleep } from './dates';
 
 const USER_AGENT = 'bookshelf-sync/0.1 (+personal reading stats; one request per page)';
+
+/**
+ * Thrown when the feed endpoint itself is gone, as opposed to a transient
+ * failure. Goodreads retired review/list_rss in November 2026: it now answers
+ * 404 for every user id, with or without a key, while ordinary pages still
+ * serve. A transient 5xx or a network error is NOT this — those still fail the
+ * sync loudly, because retrying is the right response to them.
+ */
+export class FeedUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FeedUnavailableError';
+  }
+}
 const PER_PAGE = 100;
 
 const parser = new XMLParser({
@@ -123,6 +137,12 @@ async function fetchPage(key: string | null, page: number): Promise<RssItem[]> {
   if (key) url.searchParams.set('key', key);
 
   const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+
+  if (res.status === 404) {
+    throw new FeedUnavailableError(
+      `Goodreads returned 404 for the RSS feed (page ${page}) — the endpoint has been retired`,
+    );
+  }
   if (!res.ok) {
     throw new Error(`Goodreads returned ${res.status} ${res.statusText} for page ${page}`);
   }

@@ -1,7 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Book } from '../../lib/types';
-import { fromCsvOnly, mergeBook, type CsvBook } from './merge';
+import {
+  exportIsFresh,
+  fromCsvOnly,
+  mergeBook,
+  mergeCsvOverStored,
+  type CsvBook,
+} from './merge';
 
 function rssBook(overrides: Partial<Book> = {}): Book {
   return {
@@ -169,4 +175,106 @@ test('an export-only book is archived as removed, not resurrected', () => {
   // putting deleted books back on the shelves.
   const book = fromCsvOnly({ bookId: 'b9', shelf: 'to-read' }, '2026-10-21');
   assert.equal(book.removedAt, '2026-10-21');
+});
+
+// --- life after the RSS feed was retired ------------------------------------
+
+test('an export older than the stored data is refused', () => {
+  // The export committed with the project was taken in October; by November
+  // the stored data was six weeks ahead of it. Ingesting on "the file differs"
+  // alone walked the library backwards — reads lost their dates and the
+  // challenge count fell.
+  const stored = [rssBook({ shelf: 'read', dateRead: '2026-10-10' })];
+  const olderExport: CsvBook[] = [{ bookId: 'b1', shelf: 'read', dateRead: '2026-09-30' }];
+
+  assert.equal(exportIsFresh(olderExport, stored), false);
+});
+
+test('an export that knows a more recent read is accepted', () => {
+  const stored = [rssBook({ shelf: 'read', dateRead: '2026-10-10' })];
+  const newerExport: CsvBook[] = [
+    { bookId: 'b1', shelf: 'read', dateRead: '2026-10-10' },
+    { bookId: 'b2', shelf: 'read', dateRead: '2026-11-05' },
+  ];
+
+  assert.equal(exportIsFresh(newerExport, stored), true);
+});
+
+test('an export matching the stored data exactly is accepted', () => {
+  const stored = [rssBook({ shelf: 'read', dateRead: '2026-10-10' })];
+  assert.equal(
+    exportIsFresh([{ bookId: 'b1', shelf: 'read', dateRead: '2026-10-10' }], stored),
+    true,
+  );
+});
+
+test('any export is fresh when nothing is stored yet', () => {
+  assert.equal(exportIsFresh([{ bookId: 'b1', dateRead: '2013-01-01' }], []), true);
+});
+
+test('an export with no read dates at all cannot replace stored reads', () => {
+  const stored = [rssBook({ shelf: 'read', dateRead: '2026-10-10' })];
+  assert.equal(exportIsFresh([{ bookId: 'b1', shelf: 'to-read' }], stored), false);
+});
+
+test('removed books do not make the stored data look fresher than it is', () => {
+  const stored = [
+    rssBook({ shelf: 'read', dateRead: '2026-01-01' }),
+    rssBook({ bookId: 'b2', shelf: 'read', dateRead: '2026-12-01', removedAt: '2026-02-01' }),
+  ];
+  // The December read was deleted from Goodreads, so an export that stops at
+  // February is still ahead of what counts.
+  assert.equal(exportIsFresh([{ bookId: 'b1', dateRead: '2026-02-01' }], stored), true);
+});
+
+// --- the export as the live source ------------------------------------------
+
+test('a fresh export owns every field it carries', () => {
+  const stored = rssBook({
+    shelf: 'currently-reading',
+    myRating: 3,
+    dateRead: null,
+    tags: ['old-tag'],
+  });
+  const merged = mergeCsvOverStored(
+    {
+      bookId: 'b1',
+      shelf: 'read',
+      myRating: 5,
+      dateRead: '2026-11-05',
+      tags: ['science'],
+      readCount: 2,
+    },
+    stored,
+  );
+
+  assert.equal(merged.shelf, 'read');
+  assert.equal(merged.myRating, 5);
+  assert.equal(merged.dateRead, '2026-11-05');
+  assert.deepEqual(merged.tags, ['science']);
+  assert.equal(merged.readCount, 2);
+  assert.equal(merged.removedAt, null);
+});
+
+test('a rating cleared in the export clears here too', () => {
+  const merged = mergeCsvOverStored({ bookId: 'b1', myRating: null }, rssBook({ myRating: 4 }));
+  assert.equal(merged.myRating, null);
+});
+
+test('covers and community ratings survive, having no column in the export', () => {
+  const stored = rssBook({ coverUrl: 'https://example.test/c.jpg', avgRating: 4.2 });
+  const merged = mergeCsvOverStored({ bookId: 'b1', shelf: 'read' }, stored);
+
+  assert.equal(merged.coverUrl, 'https://example.test/c.jpg');
+  assert.equal(merged.avgRating, 4.2);
+});
+
+test('an export row for a book never seen before still becomes a live book', () => {
+  const merged = mergeCsvOverStored(
+    { bookId: 'new', title: 'New One', shelf: 'read', dateRead: '2026-11-01' },
+    undefined,
+  );
+  assert.equal(merged.title, 'New One');
+  assert.equal(merged.shelf, 'read');
+  assert.equal(merged.removedAt, null);
 });

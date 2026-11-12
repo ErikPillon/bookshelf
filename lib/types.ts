@@ -101,6 +101,10 @@ export interface Meta {
     profileHtml: boolean;
     updates: boolean;
   };
+  /** Fingerprint of the library export, to detect when a new one is added. */
+  csvHash?: string | null;
+  /** When the current export was first ingested. */
+  csvIngestedAt?: string | null;
   /** Non-fatal problems worth surfacing in the footer. */
   warnings: string[];
 }

@@ -5,6 +5,11 @@ A static reading-stats page for one user, built from Goodreads RSS feeds, deploy
 **Source profile:** https://www.goodreads.com/user/show/91605767-erik-pillon (public)
 **Plan written:** 2026-10-02 · **Built:** 2026-10-02
 
+> **November 2026: Goodreads retired its RSS feeds.** `review/list_rss` and
+> `user/updates_rss` now 404 for every user. The risk in §9 landed, harder than
+> written — the feeds were not blocked, they were withdrawn. The site still runs
+> on its stored data and refreshes from a library export; see `README.md`.
+>
 > **Status: phases 0–5 shipped.** See `README.md` for how the thing actually works
 > and how to deploy it. This document is kept as the record of the decisions and
 > the reasoning behind them; where the build diverged from the plan, the sections

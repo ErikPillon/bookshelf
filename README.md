@@ -5,6 +5,30 @@ progress, history, taste, and the full shelf — static, fast, and updated daily
 
 Source profile: https://www.goodreads.com/user/show/91605767-erik-pillon
 
+## Status: Goodreads retired its RSS feeds (November 2026)
+
+`review/list_rss` and `user/updates_rss` now answer **404 for every user id**,
+with or without a key, while ordinary Goodreads pages still serve. The API died
+in December 2020 and RSS followed, so there is no longer an unauthenticated way
+to fetch a full library.
+
+What this means in practice:
+
+- **The site keeps working.** It serves the last good data, and the footer says
+  when that was and why it is not moving.
+- **The daily sync no longer fails.** It detects the retired endpoint, keeps the
+  stored library, and still scrapes currently-reading page progress from the
+  profile page, which does still work.
+- **To update the reading history, add a fresh library export.** Goodreads →
+  *My Books* → *Import and export* → *Export Library*, then replace
+  `data/seed/goodreads_library_export.csv` and push. The next sync ingests it as
+  the live source.
+- **An export older than the stored data is refused**, so adding an old file
+  cannot walk the library backwards.
+
+A transient failure — a 5xx, a dropped connection — still fails the sync loudly,
+because retrying is the right answer to those.
+
 ## How it works
 
 ```
@@ -26,10 +50,10 @@ The commit history doubles as an append-only archive of the reading history.
 
 | Source | Gives us |
 |---|---|
-| `review/list_rss/<id>?shelf=%23ALL%23` | All four shelves in one paginated feed: ratings, dates, tags, covers, community averages |
-| `data/seed/goodreads_library_export.csv` | The authoritative baseline: exclusive shelf, original publication year, read counts |
-| `user/updates_rss/<id>` | Page-progress events. A rolling ~10-event window, so it accumulates and cannot be backfilled |
-| Profile HTML | Current page progress for the few books the widget shows. Optional, isolated, expected to break eventually |
+| `review/list_rss/<id>?shelf=%23ALL%23` | **Retired Nov 2026.** Was: all four shelves in one paginated feed — ratings, dates, tags, covers, community averages |
+| `data/seed/goodreads_library_export.csv` | Now the only way to refresh the reading history. Also the source of exclusive shelf, original publication year and read counts |
+| `user/updates_rss/<id>` | **Retired Nov 2026.** Was: page-progress events, a rolling ~10-event window |
+| Profile HTML | Still works. Current page progress for the few books the widget shows — the one thing still updating automatically |
 
 Notes worth knowing before changing the ingest:
 
